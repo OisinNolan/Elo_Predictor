@@ -13,13 +13,14 @@ outputs into y.csv.
 '''
 
 # Global variables
-GAMES_LIMIT = 1000
+GAMES_LIMIT = 5000
 MOVES_LIMIT = 15
+INPUT_FILE = '../data/fics_202011_notime_50k.pgn'
 
 
-def main():
+def store_features():
     start = time.time()
-    pgn = open('../data/fics_202011_notime_50k.pgn')
+    pgn = open(INPUT_FILE)
     games = []
     for i in range(GAMES_LIMIT):
         game = chess.pgn.read_game(pgn)
@@ -53,6 +54,39 @@ def main():
 
     end = time.time()
     print(f'Time elapsed: {end - start}')
+
+def store_conv():
+    start = time.time()
+    pgn = open(INPUT_FILE)
+    games_limit = 6000
+    moves_limit = 70
+    games = np.zeros((games_limit,8,8,70))
+    y = np.zeros((games_limit, 1), dtype=int)
+    for i in range(games_limit):
+        game = chess.pgn.read_game(pgn)
+        white_elo = game.headers['WhiteElo']
+        y[i, 0] = white_elo
+        board = game.board()
+        j = 0
+        for move in game.mainline_moves():
+            if(j >= 70):
+                break
+            board.push(move)
+            #print(board)
+            mat = chess_utils.board_to_mat(board)
+            #print(mat)
+            games[i,:,:,j] = mat
+            j += 1
+        
+    np.save("mydata.npy",games)
+    np.save("mydatay.npy",y)
+    end = time.time()
+    print(f'Time elapsed: {end - start}')
+
+def main():
+    #store_features()
+    store_conv()
+
 
 
 if __name__ == '__main__':

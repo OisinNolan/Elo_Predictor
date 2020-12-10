@@ -4,6 +4,7 @@ from sklearn.metrics import mean_squared_error
 from sklearn.dummy import DummyRegressor
 from sklearn.linear_model import LinearRegression
 from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import PolynomialFeatures
 import os
 import time
 
@@ -12,14 +13,17 @@ def main():
     start = time.time()
 
     X, y = read_in_data()
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
+    print(X.shape)
+    Xpoly = PolynomialFeatures(1).fit_transform(X)
+    print(Xpoly.shape)
+    X_train, X_test, y_train, y_test = train_test_split(Xpoly, y, test_size=0.2)
 
     model = LinearRegression()
     model.fit(X_train, y_train)
     y_pred = model.predict(X_test)
     print(y_test)
     print(y_pred)
-    print(model.score(X_test,y_test))
+    print(model.score(X_test, y_test))
     er1 = mean_squared_error(y_test, y_pred)
     print("MSE for LinearRegression: %.4f" % (er1))
 
@@ -35,7 +39,7 @@ def main():
     end = time.time()
     print(f'Time elapsed: {end - start}')
 
-    
+
 def read_in_data():
     # read in input
     X = np.genfromtxt('x.csv', dtype=int, delimiter=',', names=None)
