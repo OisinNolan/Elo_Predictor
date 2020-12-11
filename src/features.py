@@ -14,8 +14,8 @@ outputs into y.csv.
 '''
 
 # Global variables
-GAMES_LIMIT = 10000
-MOVES_LIMIT = 10
+GAMES_LIMIT = 1000
+MOVES_LIMIT = 15
 INPUT_FILE = 'data/fics_202011_notime_50k.pgn'
 
 def store_linear_regression_features():
