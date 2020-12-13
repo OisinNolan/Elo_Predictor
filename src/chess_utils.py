@@ -95,3 +95,14 @@ def game_to_vec(game, moves_limit):
         game_as_vec[(64*i):(64*(i+1))] = board_to_vec(board)
         i += 1
     return game_as_vec
+
+def game_to_movetext(game, move_limit=-1):
+    '''
+    Returns a list of the moves of chess.Game 'game' as strings in
+    Standard Algebraic Notation (https://en.wikipedia.org/wiki/Algebraic_notation_(chess))
+    '''
+    game_string = str(game.mainline())
+    move_strings = game_string.split('. ')[1:move_limit]
+    move_strings = list(map(lambda s: s.rsplit(' ', 1)[0], move_strings))
+    flattened_move_strings = [move for sublist in move_strings for move in sublist]
+    return flattened_move_strings

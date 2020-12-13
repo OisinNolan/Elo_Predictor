@@ -14,7 +14,7 @@ outputs into y.csv.
 '''
 
 # Global variables
-GAMES_LIMIT = 1000
+GAMES_LIMIT = 10000
 MOVES_LIMIT = 15
 INPUT_FILE = 'data/fics_202011_notime_50k.pgn'
 
@@ -84,9 +84,9 @@ def store_linear_regression_features():
     end = time.time()
     print(f'Time elapsed: {end - start}')
 
-def store_knn_features():
+def store_game_vec_features():
     '''
-    Stores game as a concatenation of board vectors
+    Stores games as a concatenation of board vectors
     '''
     games = np.zeros((GAMES_LIMIT, 64 * MOVES_LIMIT), dtype = int)
     y = np.zeros((GAMES_LIMIT, 1), dtype = int)
@@ -99,8 +99,59 @@ def store_knn_features():
     np.save("knn_games", games)
     np.save("knn_y", y)
 
+from sklearn.preprocessing import OneHotEncoder
+import pickle
+
+def fit_onehot_encoder():
+    '''
+    Fits an sklearn OneHotEncoder to moves from GAMES_LIMIT
+    number of games. Saves encoder in file 'encoder'
+    '''
+    all_movetext = []
+    pgn = open(INPUT_FILE)
+    for i in range(GAMES_LIMIT):
+        game = chess.pgn.read_game(pgn)
+        movetext = chess_utils.game_to_movetext(game)
+        all_movetext = all_movetext + movetext
+    all_movetext = np.array(all_movetext).reshape(-1, 1)
+    encoder = OneHotEncoder(handle_unknown='ignore').fit(all_movetext)
+    with open('encoder', 'wb') as f:
+        pickle.dump(encoder, f)
+
+from sklearn.decomposition import TruncatedSVD
+from sklearn.decomposition import PCA
+
+def store_text_features():
+    '''
+    Stores compressed one-hot encodings of PGN movetext
+    '''
+    encoded_games = []
+    elos = []
+    pgn = open(INPUT_FILE)
+    f = open('encoder', 'rb')
+    encoder = pickle.load(f)
+    for i in range(GAMES_LIMIT):
+        game = chess.pgn.read_game(pgn)
+        movetext = chess_utils.game_to_movetext(game, MOVES_LIMIT)
+        movetext = np.array(movetext).reshape(-1, 1)
+        if not len(movetext):
+            continue
+        # encode game
+        encoding = encoder.transform(movetext).toarray()
+        encoding = np.rot90(encoding, axes=(0, 1))
+        # compress encoding
+        pca = PCA(n_components=MOVES_LIMIT)
+        compressed_encoding = pca.fit_transform(encoding)
+        compressed_encoding = np.rot90(compressed_encoding, axes=(1, 0))
+        encoded_games.append(compressed_encoding.flatten())
+        elos.append(game.headers['WhiteElo'])
+    np.save('games_text', encoded_games)
+    np.save('elos_text', elos)
+
 def main():
-    store_knn_features()
+    #store_game_vec_features()
+    store_text_features()
+
 
 if __name__ == '__main__':
     main()
