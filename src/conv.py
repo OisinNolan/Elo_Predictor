@@ -17,12 +17,12 @@ plt.rc('font', size=18)
 plt.rcParams['figure.constrained_layout.use'] = True
 
 # Model / data parameters
-num_classes = 10
-input_shape = (32, 32, 3)
+#num_classes = 10
+#input_shape = (32, 32, 3)
 
 # the data, split between train and test sets
-X = np.load("mydata.npy")
-y = np.load("mydatay.npy")
+X = np.load("mydata2.npy")
+y = np.load("mydata2y.npy")
 x_train, x_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
 # n=5000
 #x_train = x_train[1:n]; y_train=y_train[1:n]
@@ -34,8 +34,8 @@ min_max_scaler = preprocessing.MinMaxScaler()
 #x_test = min_max_scaler.fit_transform(x_test)
 y_train = min_max_scaler.fit_transform(y_train)
 y_test = min_max_scaler.fit_transform(y_test)
-x_train = (x_train.astype("float32") + 6) / 13
-x_test = (x_test.astype("float32") + 6) / 13
+#x_train = (x_train.astype("float32") + 6) / 13
+#x_test = (x_test.astype("float32") + 6) / 13
 print("orig x_train shape:", x_train.shape)
 
 # convert class vectors to binary class matrices
@@ -47,28 +47,31 @@ if use_saved_model:
     model = keras.models.load_model("chess.model")
 else:
     model = keras.Sequential()
-    model.add(Conv2D(16, (3, 3), padding='same',
+    model.add(Conv2D(40, (1, 1), padding='same',
                      input_shape=x_train.shape[1:], activation='relu'))
-    #model.add(MaxPooling2D(pool_size=(2, 2), padding='same'))
-    model.add(Conv2D(4, (3, 3), padding='same', activation='relu'))
-    #model.add(MaxPooling2D(pool_size=(2, 2)))
-    model.add(Conv2D(4, (1, 1), padding='same', activation='relu'))
+    model.add(Conv2D(40, (1, 1), padding='same', activation='relu'))
+    model.add(Conv2D(40, (1, 1), padding='same', activation='relu'))
+    model.add(MaxPooling2D(pool_size=(2, 2), padding='same'))
+    model.add(Conv2D(60, (5, 5), padding='same', activation='relu'))
+    #model.add(Conv2D(16, (1, 5), padding='same', activation='relu'))
+    model.add(MaxPooling2D(pool_size=(2, 2)))
+    model.add(Conv2D(80, (1, 1), padding='same', activation='relu'))
     model.add(Dropout(0.5))
     model.add(Flatten())
-    model.add(Dense(15, activation='relu',
-                    kernel_regularizer=regularizers.l2(0.01)))
-    model.add(Dense(3, activation='relu',
-                    kernel_regularizer=regularizers.l2(0.1)))
-    model.add(Dense(1, activation='linear'))
+    model.add(Dense(30, activation='relu',
+                    kernel_regularizer=regularizers.l1(0.1)))
+    #model.add(Dense(3, activation='relu',
+    #                kernel_regularizer=regularizers.l2(0.1)))
+    model.add(Dense(2, activation='linear'))
     model.compile(optimizer='sgd',
                   loss='mse',
                   metrics=[tf.keras.metrics.MeanSquaredError()])
     model.summary()
 
-    batch_size = 142
-    epochs = 20
+    batch_size = 128
+    epochs = 5
     history = model.fit(x_train, y_train, batch_size=batch_size,
-                        epochs=epochs, validation_split=0.2)
+                        epochs=epochs, validation_split=0.1)
     model.save("chess.model")
     plt.subplot(211)
     plt.plot(history.history['mean_squared_error'])

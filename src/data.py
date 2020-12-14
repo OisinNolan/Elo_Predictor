@@ -13,7 +13,7 @@ outputs into y.csv.
 '''
 
 # Global variables
-GAMES_LIMIT = 5000
+GAMES_LIMIT = 100
 MOVES_LIMIT = 15
 INPUT_FILE = '../data/fics_202011_notime_50k.pgn'
 
@@ -58,18 +58,24 @@ def store_features():
 def store_conv():
     start = time.time()
     pgn = open(INPUT_FILE)
-    games_limit = 6000
-    moves_limit = 70
-    games = np.zeros((games_limit,8,8,70))
-    y = np.zeros((games_limit, 1), dtype=int)
+    games_limit = 49000
+    moves_limit = 50
+    games = np.full((games_limit,8,8,moves_limit), 0)
+    y = np.zeros((games_limit, 2), dtype=int)
     for i in range(games_limit):
         game = chess.pgn.read_game(pgn)
+        if game is None:
+            continue; 
+        if 'WhiteElo' not in game.headers or 'BlackElo' not in game.headers:
+            continue;
         white_elo = game.headers['WhiteElo']
         y[i, 0] = white_elo
+        black_elo = game.headers['BlackElo']
+        y[i, 1]= black_elo
         board = game.board()
         j = 0
         for move in game.mainline_moves():
-            if(j >= 70):
+            if(j >= moves_limit):
                 break
             board.push(move)
             #print(board)
@@ -78,8 +84,8 @@ def store_conv():
             games[i,:,:,j] = mat
             j += 1
         
-    np.save("mydata.npy",games)
-    np.save("mydatay.npy",y)
+    np.save("mydata2.npy",games)
+    np.save("mydata2y.npy",y)
     end = time.time()
     print(f'Time elapsed: {end - start}')
 
