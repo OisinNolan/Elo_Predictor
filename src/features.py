@@ -266,7 +266,6 @@ def game_features(game):
     ending = encode_ending(movetext)
     return [result, num_moves, num_checks, num_kingside_castle, num_queenside_castle, num_pawn_promotion, ending]
 
->>>>>>> Stashed changes
 
 def store_game_vec_features():
     '''
