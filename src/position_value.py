@@ -2,6 +2,8 @@ import numpy as np
 
 #https://www.chessprogramming.org/Simplified_Evaluation_Function#Piece-Square_Tables
 
+piece_weights_cp = [100,320,330,500,900,200000] # pawn, knight, bishop, rook, queen, king
+
 pawn_weights_w = np.array([
     [0,  0,  0,  0,  0,  0,  0,  0],
     [50, 50, 50, 50, 50, 50, 50, 50],
@@ -13,7 +15,7 @@ pawn_weights_w = np.array([
     [0,  0,  0,  0,  0,  0,  0,  0]
 ])
 pawn_weights_b = np.flipud(pawn_weights_w)
-    
+
 knight_weights_w = np.array([
     [-50,-40,-30,-30,-30,-30,-40,-50],
     [-40,-20,  0,  0,  0,  0,-20,-40],
@@ -34,7 +36,7 @@ bishop_weights_w = np.array([
     [-10,  0, 10, 10, 10, 10,  0,-10],
     [-10, 10, 10, 10, 10, 10, 10,-10],
     [-10,  5,  0,  0,  0,  0,  5,-10],
-    [-20,-10,-10,-10,-10,-10,-10,-20]  
+    [-20,-10,-10,-10,-10,-10,-10,-20]
 ])
 bishop_weights_b = np.flipud(bishop_weights_w)
 
@@ -46,7 +48,7 @@ rook_weights_w = np.array([
     [-5,  0,  0,  0,  0,  0,  0, -5],
     [-5,  0,  0,  0,  0,  0,  0, -5],
     [-5,  0,  0,  0,  0,  0,  0, -5],
-    [0,  0,  0,  5,  5,  0,  0,  0]   
+    [0,  0,  0,  5,  5,  0,  0,  0]
 ])
 rook_weights_b = np.flipud(rook_weights_w)
 
@@ -58,7 +60,7 @@ queen_weights_w = np.array([
     [0,  0,  5,  5,  5,  5,  0, -5],
     [-10,  5,  5,  5,  5,  5,  0,-10],
     [-10,  0,  5,  0,  0,  0,  0,-10],
-    [-20,-10,-10, -5, -5,-10,-10,-20]  
+    [-20,-10,-10, -5, -5,-10,-10,-20]
 ])
 queen_weights_b = np.flipud(queen_weights_w)
 
@@ -82,7 +84,7 @@ king_weights_late_w = np.array([
     [-30,-10, 30, 40, 40, 30,-10,-30],
     [-30,-10, 20, 30, 30, 20,-10,-30],
     [-30,-30,  0,  0,  0,  0,-30,-30],
-    [-50,-30,-30,-30,-30,-30,-30,-50] 
+    [-50,-30,-30,-30,-30,-30,-30,-50]
 ])
 king_weights_late_b = np.flipud(king_weights_late_w)
 
