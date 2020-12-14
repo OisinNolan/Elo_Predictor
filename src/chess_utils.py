@@ -3,6 +3,8 @@ import chess.pgn
 import position_value
 import numpy as np
 
+
+
 # Given chess.pgn.Game and chess.Color
 # Return -1 if draw, 1 if color won, 0 if color lost.
 def get_game_result(game, color):
@@ -27,6 +29,7 @@ def get_piece_value(board, color):
 # Functions from notebooks/data_exploration on Anton branch
 weights_w = position_value.weights_w
 weights_b = position_value.weights_b
+weights_cp = position_value.piece_weights_cp
 
 # Gets number indicating how strong the positioning of a given piece is
 def get_piece_position_value(piece, i, j, moveNum, limit):
@@ -40,12 +43,12 @@ def get_piece_position_value(piece, i, j, moveNum, limit):
     else:
         print("Invalid color")
         return 0
-    
+
     pt = piece.piece_type
-    if pt == 6:
-        if moveNum > limit:
-            return weights[pt][i][j]
-    return weights[pt-1][i][j]
+    if pt == 6 and moveNum > limit:
+        return weights[pt][i][j] + weights_cp[pt-1]
+        # in the case where it is "late game" and pt == king, we use the second king values matrix
+    return weights[pt-1][i][j] + weights_cp[pt-1]
 
 # Gives number indicating how strong a given player's position is
 def get_board_position_value(board, color, limit):
