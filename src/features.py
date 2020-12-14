@@ -86,6 +86,58 @@ def store_linear_regression_features():
     print(f'Time elapsed: {end - start}')
 
 
+def store_short_features():
+    start = time.time()
+    pgn = open(f'{pathlib.Path().absolute()}/data/fics_202011_notime_50k.pgn')
+    games = []
+    for i in range(GAMES_LIMIT):
+        game = chess.pgn.read_game(pgn)
+        games.append(game)
+
+    features_num = 28
+    x = np.zeros((GAMES_LIMIT, features_num), dtype=int)
+    y = np.zeros((GAMES_LIMIT, 2), dtype=int)
+    for i in range(GAMES_LIMIT):
+        #print(game)
+        game = games[i]
+        if not game:
+            break
+        white_elo = game.headers['WhiteElo']
+        y[i, 0] = white_elo
+        black_elo = game.headers['BlackElo']
+        y[i, 1] = black_elo
+        board = game.board()
+        j = 0
+        turn = True  # white
+        # Get piece value for each move
+        scores = np.zeros(2*MOVES_LIMIT, dtype=float)
+        game = games[i]
+        for move in game.mainline_moves():
+            if(j >= 2*MOVES_LIMIT):
+                break
+            board.push(move)
+            move_val = 0
+            if turn:
+                move_val = chess_utils.get_board_position_value(board, chess.WHITE, 30)
+            else:
+                move_val = -1*chess_utils.get_board_position_value(board, chess.BLACK, 30)
+            scores[j] = move_val
+            j += 1
+            turn = turn ^ True
+        #print(scores)
+        (white_feat, black_feat, corr) = scores_to_features(scores[:game.end().ply()])
+        x[i,0:10] = white_feat
+        x[i,10:20] = black_feat
+        x[i,20] = corr
+        x[i,21:28] = game_features(game)
+
+    np.savetxt("x.csv", x, delimiter=",", fmt='%.4f')
+    np.savetxt("y.csv", y, delimiter=",", fmt='%d')
+
+    end = time.time()
+    print(f'Time elapsed: {end - start}')
+
+
 def scores_to_features(scores):
     ''' 
     Input: 
@@ -98,13 +150,16 @@ def scores_to_features(scores):
     white_moves = scores[::2]
     black_moves  = scores[1::2]
     wsize = white_moves.shape[0]
-    bsize = white_moves.shape[0]
+    bsize = black_moves.shape[0]
     minsize = min(wsize, bsize)
     (corr1_, corr2_) = stats.pearsonr(white_moves[:minsize], black_moves[:minsize])
 
     return (scores_to_features_1p(white_moves), scores_to_features_1p(black_moves), corr1_)
 
 def scores_to_features_1p(scores):
+    '''
+        Returns 10 features.
+    '''
     # effectively a time series data
 
     # TODO(JC): the below is probably not very efficient.
@@ -199,7 +254,7 @@ def encode_ending(movetext):
 
 def game_features(game):
     '''
-    Extracts features from game & game metadata
+    Extracts features from game & game metadata. (7 features)
     '''
     result = encode_result(game)
     num_moves = game.end().ply()
@@ -211,6 +266,7 @@ def game_features(game):
     ending = encode_ending(movetext)
     return [result, num_moves, num_checks, num_kingside_castle, num_queenside_castle, num_pawn_promotion, ending]
 
+>>>>>>> Stashed changes
 
 def store_game_vec_features():
     '''
@@ -279,7 +335,8 @@ def store_text_features():
 def main():
     #store_game_vec_features()
     #store_text_features()
-    print(scores_to_features(np.array([1,2,3,4,5,5,6,7,1,2])))
+    #print(scores_to_features(np.array([1,2,3,4,5,5,6,7,1,2])))
+    store_short_features()
 
 
 if __name__ == '__main__':
