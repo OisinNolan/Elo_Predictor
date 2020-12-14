@@ -154,6 +154,63 @@ def largest_non_increasing_len(arr):
     res = max(res, l)
     return res
 
+def encode_result(game):
+    '''
+    Returns encoding of game result as integer:
+        0: white wins (1-0)
+        1: black wins (0-1)
+        2: draw (1/2-1/2)
+    '''
+    result = 0
+    result_string = game.headers['Result']
+    if result_string[0] == '0':
+        result = 1
+    elif '1/2' in result_string:
+        result = 2
+    return result
+
+def encode_ending(movetext):
+    '''
+    Win / Lose:
+        0: checkmated
+        1: resigned
+        2: timeout
+    Draw:
+        3: repetition
+        4: agreement
+        5: insufficient material
+        6: stalemate
+    '''
+    ending = 0
+    if 'resign' in movetext:
+        ending = 1
+    elif 'forfeits on time' in movetext:
+        ending = 2
+    elif 'drawn by repetition' in movetext:
+        ending = 3
+    elif 'drawn by mutual agreement' in movetext:
+        ending = 4
+    elif 'Neither player has mating material' in movetext:
+        ending = 5
+    elif 'drawn by stalemate' in movetext:
+        ending = 6
+    return ending
+    
+
+def game_features(game):
+    '''
+    Extracts features from game & game metadata
+    '''
+    result = encode_result(game)
+    num_moves = game.end().ply()
+    movetext = str(game.mainline())
+    num_checks = movetext.count('+')
+    num_kingside_castle = movetext.count('O-O')
+    num_queenside_castle = movetext.count('O-O-O')
+    num_pawn_promotion = movetext.count('=')
+    ending = encode_ending(movetext)
+    return [result, num_moves, num_checks, num_kingside_castle, num_queenside_castle, num_pawn_promotion, ending]
+
 
 def store_game_vec_features():
     '''
