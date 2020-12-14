@@ -5,6 +5,7 @@ import chess.pgn
 import chess_utils
 
 import numpy as np
+from scipy import stats
 import pathlib
 
 '''
@@ -84,6 +85,76 @@ def store_linear_regression_features():
     end = time.time()
     print(f'Time elapsed: {end - start}')
 
+
+def scores_to_features(scores):
+    ''' 
+    Input: 
+        scores - array of scores per each half move.
+    Output:
+        (white_features, black_features, pearson_corr) :
+            a vector of various features for the moves.
+            In particular, descriptive statistics.
+    ''' 
+    white_moves = scores[::2]
+    black_moves  = scores[1::2]
+    wsize = white_moves.shape[0]
+    bsize = white_moves.shape[0]
+    minsize = min(wsize, bsize)
+    (corr1_, corr2_) = stats.pearsonr(white_moves[:minsize], black_moves[:minsize])
+
+    return (scores_to_features_1p(white_moves), scores_to_features_1p(black_moves), corr1_)
+
+def scores_to_features_1p(scores):
+    # effectively a time series data
+
+    # TODO(JC): the below is probably not very efficient.
+    sz = scores.shape[0]
+    median_ = np.median(scores)
+    mean_ = np.mean(scores)
+    half_sz = int(sz/2)
+    half1_mean_ = np.mean(scores[:half_sz])
+    half2_mean_ = np.mean(scores[half_sz:])
+    var_ = np.var(scores)
+    min_ = np.amin(scores)
+    max_ = np.amax(scores)
+    skew_ = stats.skew(scores)
+    # aturocorrelation maybe?
+    
+    # calculate the largest non-decreasing subarray size.
+    inc_streak_ = largest_non_decreasing_len(scores)
+    dec_streak_ = largest_non_increasing_len(scores)
+
+    return [median_, mean_, half1_mean_, half2_mean_, var_,
+             min_, max_, skew_, inc_streak_, dec_streak_]
+
+def largest_non_decreasing_len(arr):
+    res = 0
+    l = 0
+    n = arr.shape[0]
+    for i in range(1, n):
+        if(arr[i] >= arr[i-1]):
+            l = l + 1
+        else: 
+            res = max(res, l)
+            l = 0
+    res = max(res, l)
+    return res
+
+def largest_non_increasing_len(arr):
+    # Can we factor this out?
+    res = 0
+    l = 0
+    n = arr.shape[0]
+    for i in range(1, n):
+        if(arr[i] <= arr[i-1]):
+            l = l + 1
+        else: 
+            res = max(res, l)
+            l = 0
+    res = max(res, l)
+    return res
+
+
 def store_game_vec_features():
     '''
     Stores games as a concatenation of board vectors
@@ -150,7 +221,8 @@ def store_text_features():
 
 def main():
     #store_game_vec_features()
-    store_text_features()
+    #store_text_features()
+    print(scores_to_features(np.array([1,2,3,4,5,5,6,7,1,2])))
 
 
 if __name__ == '__main__':
