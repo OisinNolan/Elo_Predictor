@@ -15,7 +15,7 @@ outputs into y.csv.
 '''
 
 # Global variables
-GAMES_LIMIT = 10000
+GAMES_LIMIT = 30000
 MOVES_LIMIT = 50
 INPUT_FILE = 'data/fics_202011_notime_50k.pgn'
 
@@ -88,17 +88,18 @@ def store_linear_regression_features():
 
 def store_short_features():
     # TODO(JC): use absolute paths.
-    
+
     start = time.time()
     pgn = open(f'{pathlib.Path().absolute()}/data/fics_202011_notime_50k.pgn')
     games = []
     i = 0
+    global GAMES_LIMIT
     while i < GAMES_LIMIT:
         game = chess.pgn.read_game(pgn)
         if game.end().ply() < 4:
             continue
         games.append(game)
-        i++
+        i+=1
 
     GAMES_LIMIT = min(GAMES_LIMIT, len(games))
     features_num = 28
@@ -136,6 +137,9 @@ def store_short_features():
         (white_feat, black_feat, corr) = scores_to_features(scores[:game.end().ply()])
         x[i,0:10] = white_feat
         x[i,10:20] = black_feat
+        if(np.isnan(corr)):
+            # set an arbitrary value
+            corr = 3
         x[i,20] = corr
         x[i,21:28] = game_features(game)
 
