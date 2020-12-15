@@ -21,7 +21,8 @@ INPUT_FILE = 'data/fics_202011_notime_50k.pgn'
 
 def store_linear_regression_features():
     start = time.time()
-    pgn = open(f'{pathlib.Path().absolute()}/data/fics_202011_notime_50k.pgn')
+    #pgn = open(f'{pathlib.Path().absolute()}/data/fics_202011_notime_50k.pgn')
+    pgn = open(f'../data/fics_202011_notime_50k.pgn')
     games = []
     for i in range(GAMES_LIMIT):
         game = chess.pgn.read_game(pgn)
@@ -54,7 +55,7 @@ def store_linear_regression_features():
             x[i, j] = move_val
             j += 1
             turn = turn ^ True
-        
+
         # Get advantage & advantage stats for each move
         board = game.board()
         k = 0
@@ -90,7 +91,8 @@ def store_short_features():
     # TODO(JC): use absolute paths.
 
     start = time.time()
-    pgn = open(f'{pathlib.Path().absolute()}/data/fics_202011_notime_50k.pgn')
+    #pgn = open(f'{pathlib.Path().absolute()}/data/fics_202011_notime_50k.pgn')
+    pgn = open(f'../data/fics_202011_notime_50k.pgn')
     games = []
     i = 0
     global GAMES_LIMIT
@@ -151,14 +153,14 @@ def store_short_features():
 
 
 def scores_to_features(scores):
-    ''' 
-    Input: 
+    '''
+    Input:
         scores - array of scores per each half move.
     Output:
         (white_features, black_features, pearson_corr) :
             a vector of various features for the moves.
             In particular, descriptive statistics.
-    ''' 
+    '''
     white_moves = scores[::2]
     black_moves  = scores[1::2]
     wsize = white_moves.shape[0]
@@ -186,7 +188,7 @@ def scores_to_features_1p(scores):
     max_ = np.amax(scores)
     skew_ = stats.skew(scores)
     # aturocorrelation maybe?
-    
+
     # calculate the largest non-decreasing subarray size.
     inc_streak_ = largest_non_decreasing_len(scores)
     dec_streak_ = largest_non_increasing_len(scores)
@@ -201,7 +203,7 @@ def largest_non_decreasing_len(arr):
     for i in range(1, n):
         if(arr[i] >= arr[i-1]):
             l = l + 1
-        else: 
+        else:
             res = max(res, l)
             l = 0
     res = max(res, l)
@@ -215,7 +217,7 @@ def largest_non_increasing_len(arr):
     for i in range(1, n):
         if(arr[i] <= arr[i-1]):
             l = l + 1
-        else: 
+        else:
             res = max(res, l)
             l = 0
     res = max(res, l)
@@ -262,7 +264,7 @@ def encode_ending(movetext):
     elif 'drawn by stalemate' in movetext:
         ending = 6
     return ending
-    
+
 
 def game_features(game):
     '''
