@@ -1,4 +1,5 @@
 from sklearn.linear_model import LinearRegression, Lasso, Ridge
+from sklearn.neighbors import KNeighborsRegressor
 import numpy as np
 from sklearn.model_selection import cross_validate, KFold
 from sklearn.preprocessing import PolynomialFeatures
@@ -10,10 +11,18 @@ from sklearn.metrics import mean_squared_error, mean_absolute_error
 def mae_ratio(mae, baseline_mae):
     return 1 - (mae / baseline_mae)
 
+def gaussian_kernel(dist):
+    weights = np.exp(-g * (dist ** 2))
+    return weights/np.sum(weights)
+
 
 GAMES_LIMIT = 10000
 MOVES_LIMIT = 50
-CV = 10
+CV = 5
+g = 0.00001
+
+
+
 
 # TODO(JC): implement file read from global path.
 
@@ -37,18 +46,26 @@ def main():
     cv_results = cross_validate(
         baseline, X, y, cv=CV, scoring='neg_mean_absolute_error')
     baseline_fit_time = np.mean(cv_results['fit_time'])
-    print(f'Fit time: {baseline_fit_time}')
+    print(f'Baseline Fit time: {baseline_fit_time}')
     baseline_mae = -np.mean(cv_results['test_score'])
-    print(f'MAE: {baseline_mae}')
+    print(f'Baseline MAE: {baseline_mae}')
 
     lr_model = LinearRegression()
     cv_results = cross_validate(
         lr_model, X, y, cv=CV, scoring='neg_mean_absolute_error')
     lr_fit_time = np.mean(cv_results['fit_time'])
-    print(f'Fit time: {lr_fit_time}')
+    print(f'LinReg Fit time: {lr_fit_time}')
     lr_mae = -np.mean(cv_results['test_score'])
-    print(f'MAE: {lr_mae}')
+    print(f'LinReg MAE: {lr_mae}')
     print(f'MAE Ratio: {mae_ratio(lr_mae, baseline_mae)}')
+
+    knn_model = KNeighborsRegressor(n_neighbors = 8000, weights=gaussian_kernel, metric = 'euclidean')
+    cv_results = cross_validate(knn_model, X, y, cv=CV, scoring = 'neg_mean_absolute_error')
+    knn_fit_time = np.mean(cv_results['fit_time'])
+    knn_mae = -np.mean(cv_results['test_score'])
+    print(f'KNN regressor MAE: {knn_mae}')
+    print(f'MAE Ratio: {mae_ratio(knn_mae, baseline_mae)}')
+
 
     # lasso_model = Lasso(alpha=1/1000, max_iter=1000)
     # cv_results = cross_validate(
@@ -68,7 +85,7 @@ def main():
       model = Ridge(alpha=1/(Ci), max_iter=10000)
       kf = KFold(n_splits=k)
       predictions = []
-      
+
       for train, test in kf.split(X):
         model.fit(X[train], y[train])
         ypred = model.predict(X[test])
@@ -89,10 +106,12 @@ def main():
     cv_results = cross_validate(
         ridge_model, X, y, cv=CV, scoring='neg_mean_absolute_error')
     lr_fit_time = np.mean(cv_results['fit_time'])
-    print(f'Fit time: {lr_fit_time}')
+    print(f'Ridge Fit time: {lr_fit_time}')
     lr_mae = -np.mean(cv_results['test_score'])
-    print(f'MAE: {lr_mae}')
+    print(f'Ridge MAE: {lr_mae}')
     print(f'MAE Ratio: {mae_ratio(lr_mae, baseline_mae)}')
+
+
 
     plt.show()
 
