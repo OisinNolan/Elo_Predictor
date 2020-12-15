@@ -16,7 +16,7 @@ outputs into y.csv.
 
 # Global variables
 GAMES_LIMIT = 10000
-MOVES_LIMIT = 15
+MOVES_LIMIT = 50
 INPUT_FILE = 'data/fics_202011_notime_50k.pgn'
 
 def store_linear_regression_features():
@@ -87,17 +87,24 @@ def store_linear_regression_features():
 
 
 def store_short_features():
+    # TODO(JC): use absolute paths.
+    
     start = time.time()
     pgn = open(f'{pathlib.Path().absolute()}/data/fics_202011_notime_50k.pgn')
     games = []
-    for i in range(GAMES_LIMIT):
+    i = 0
+    while i < GAMES_LIMIT:
         game = chess.pgn.read_game(pgn)
+        if game.end().ply() < 4:
+            continue
         games.append(game)
+        i++
 
+    GAMES_LIMIT = min(GAMES_LIMIT, len(games))
     features_num = 28
     x = np.zeros((GAMES_LIMIT, features_num), dtype=int)
     y = np.zeros((GAMES_LIMIT, 2), dtype=int)
-    for i in range(GAMES_LIMIT):
+    for i in range(len(games)):
         #print(game)
         game = games[i]
         if not game:
@@ -111,6 +118,7 @@ def store_short_features():
         turn = True  # white
         # Get piece value for each move
         scores = np.zeros(2*MOVES_LIMIT, dtype=float)
+
         game = games[i]
         for move in game.mainline_moves():
             if(j >= 2*MOVES_LIMIT):
@@ -131,8 +139,8 @@ def store_short_features():
         x[i,20] = corr
         x[i,21:28] = game_features(game)
 
-    np.savetxt("x.csv", x, delimiter=",", fmt='%.4f')
-    np.savetxt("y.csv", y, delimiter=",", fmt='%d')
+    np.savetxt("x_%s_%d.csv" % (GAMES_LIMIT, MOVES_LIMIT), x, delimiter=",", fmt='%.4f')
+    np.savetxt("y_%s_%d.csv" % (GAMES_LIMIT, MOVES_LIMIT), y, delimiter=",", fmt='%d')
 
     end = time.time()
     print(f'Time elapsed: {end - start}')
@@ -179,8 +187,8 @@ def scores_to_features_1p(scores):
     inc_streak_ = largest_non_decreasing_len(scores)
     dec_streak_ = largest_non_increasing_len(scores)
 
-    return [median_, mean_, half1_mean_, half2_mean_, var_,
-             min_, max_, skew_, inc_streak_, dec_streak_]
+    return np.array([median_, mean_, half1_mean_, half2_mean_, var_,
+             min_, max_, skew_, inc_streak_, dec_streak_])
 
 def largest_non_decreasing_len(arr):
     res = 0
