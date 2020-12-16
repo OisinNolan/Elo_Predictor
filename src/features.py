@@ -15,13 +15,14 @@ outputs into y.csv.
 '''
 
 # Global variables
-GAMES_LIMIT = 10000
-MOVES_LIMIT = 15
+GAMES_LIMIT = 30000
+MOVES_LIMIT = 50
 INPUT_FILE = 'data/fics_202011_notime_50k.pgn'
 
 def store_linear_regression_features():
     start = time.time()
-    pgn = open(f'{pathlib.Path().absolute()}/data/fics_202011_notime_50k.pgn')
+    #pgn = open(f'{pathlib.Path().absolute()}/data/fics_202011_notime_50k.pgn')
+    pgn = open(f'../data/fics_202011_notime_50k.pgn')
     games = []
     for i in range(GAMES_LIMIT):
         game = chess.pgn.read_game(pgn)
@@ -54,7 +55,7 @@ def store_linear_regression_features():
             x[i, j] = move_val
             j += 1
             turn = turn ^ True
-        
+
         # Get advantage & advantage stats for each move
         board = game.board()
         k = 0
@@ -86,25 +87,93 @@ def store_linear_regression_features():
     print(f'Time elapsed: {end - start}')
 
 
+def store_short_features():
+    # TODO(JC): use absolute paths.
+
+    start = time.time()
+    #pgn = open(f'{pathlib.Path().absolute()}/data/fics_202011_notime_50k.pgn')
+    pgn = open(f'../data/fics_202011_notime_50k.pgn')
+    games = []
+    i = 0
+    global GAMES_LIMIT
+    while i < GAMES_LIMIT:
+        game = chess.pgn.read_game(pgn)
+        if game.end().ply() < 4:
+            continue
+        games.append(game)
+        i+=1
+
+    GAMES_LIMIT = min(GAMES_LIMIT, len(games))
+    features_num = 28
+    x = np.zeros((GAMES_LIMIT, features_num), dtype=int)
+    y = np.zeros((GAMES_LIMIT, 2), dtype=int)
+    for i in range(len(games)):
+        #print(game)
+        game = games[i]
+        if not game:
+            break
+        white_elo = game.headers['WhiteElo']
+        y[i, 0] = white_elo
+        black_elo = game.headers['BlackElo']
+        y[i, 1] = black_elo
+        board = game.board()
+        j = 0
+        turn = True  # white
+        # Get piece value for each move
+        scores = np.zeros(2*MOVES_LIMIT, dtype=float)
+
+        game = games[i]
+        for move in game.mainline_moves():
+            if(j >= 2*MOVES_LIMIT):
+                break
+            board.push(move)
+            move_val = 0
+            if turn:
+                move_val = chess_utils.get_board_position_value(board, chess.WHITE, 30)
+            else:
+                move_val = -1*chess_utils.get_board_position_value(board, chess.BLACK, 30)
+            scores[j] = move_val
+            j += 1
+            turn = turn ^ True
+        #print(scores)
+        (white_feat, black_feat, corr) = scores_to_features(scores[:game.end().ply()])
+        x[i,0:10] = white_feat
+        x[i,10:20] = black_feat
+        if(np.isnan(corr)):
+            # set an arbitrary value
+            corr = 3
+        x[i,20] = corr
+        x[i,21:28] = game_features(game)
+
+    np.savetxt("x_%s_%d.csv" % (GAMES_LIMIT, MOVES_LIMIT), x, delimiter=",", fmt='%.4f')
+    np.savetxt("y_%s_%d.csv" % (GAMES_LIMIT, MOVES_LIMIT), y, delimiter=",", fmt='%d')
+
+    end = time.time()
+    print(f'Time elapsed: {end - start}')
+
+
 def scores_to_features(scores):
-    ''' 
-    Input: 
+    '''
+    Input:
         scores - array of scores per each half move.
     Output:
         (white_features, black_features, pearson_corr) :
             a vector of various features for the moves.
             In particular, descriptive statistics.
-    ''' 
+    '''
     white_moves = scores[::2]
     black_moves  = scores[1::2]
     wsize = white_moves.shape[0]
-    bsize = white_moves.shape[0]
+    bsize = black_moves.shape[0]
     minsize = min(wsize, bsize)
     (corr1_, corr2_) = stats.pearsonr(white_moves[:minsize], black_moves[:minsize])
 
     return (scores_to_features_1p(white_moves), scores_to_features_1p(black_moves), corr1_)
 
 def scores_to_features_1p(scores):
+    '''
+        Returns 10 features.
+    '''
     # effectively a time series data
 
     # TODO(JC): the below is probably not very efficient.
@@ -119,13 +188,13 @@ def scores_to_features_1p(scores):
     max_ = np.amax(scores)
     skew_ = stats.skew(scores)
     # aturocorrelation maybe?
-    
+
     # calculate the largest non-decreasing subarray size.
     inc_streak_ = largest_non_decreasing_len(scores)
     dec_streak_ = largest_non_increasing_len(scores)
 
-    return [median_, mean_, half1_mean_, half2_mean_, var_,
-             min_, max_, skew_, inc_streak_, dec_streak_]
+    return np.array([median_, mean_, half1_mean_, half2_mean_, var_,
+             min_, max_, skew_, inc_streak_, dec_streak_])
 
 def largest_non_decreasing_len(arr):
     res = 0
@@ -134,7 +203,7 @@ def largest_non_decreasing_len(arr):
     for i in range(1, n):
         if(arr[i] >= arr[i-1]):
             l = l + 1
-        else: 
+        else:
             res = max(res, l)
             l = 0
     res = max(res, l)
@@ -148,7 +217,7 @@ def largest_non_increasing_len(arr):
     for i in range(1, n):
         if(arr[i] <= arr[i-1]):
             l = l + 1
-        else: 
+        else:
             res = max(res, l)
             l = 0
     res = max(res, l)
@@ -195,11 +264,11 @@ def encode_ending(movetext):
     elif 'drawn by stalemate' in movetext:
         ending = 6
     return ending
-    
+
 
 def game_features(game):
     '''
-    Extracts features from game & game metadata
+    Extracts features from game & game metadata. (7 features)
     '''
     result = encode_result(game)
     num_moves = game.end().ply()
@@ -279,7 +348,8 @@ def store_text_features():
 def main():
     #store_game_vec_features()
     #store_text_features()
-    print(scores_to_features(np.array([1,2,3,4,5,5,6,7,1,2])))
+    #print(scores_to_features(np.array([1,2,3,4,5,5,6,7,1,2])))
+    store_short_features()
 
 
 if __name__ == '__main__':
