@@ -6,7 +6,7 @@ import numpy as np
 import time
 import json
 
-def testbench(pipe, train_count, test_count, filename):
+def test(pipe, train_count, test_count, filename, description=None):
     '''
     Trains a given pipeline 'pipe' on 'train_count'
     games of chess from data/train_50k and then evaluates it
@@ -45,6 +45,7 @@ def testbench(pipe, train_count, test_count, filename):
     MSE = mean_squared_error(y_test, y_pred)
     
     results = {
+        'Description': description,
         'Pipeline': str(pipe.named_steps),
         '# Games for training': train_count,
         '# Games for testing': test_count,
