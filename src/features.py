@@ -86,6 +86,29 @@ def store_linear_regression_features():
     end = time.time()
     print(f'Time elapsed: {end - start}')
 
+def clean_data(filename):
+    start = time.time()
+    #pgn = open(f'{pathlib.Path().absolute()}/data/fics_202011_notime_50k.pgn')
+    pgn = open('%s.pgn'%(filename))
+    games = []
+    i = 0
+    while True:
+        game = chess.pgn.read_game(pgn)
+        if game is None:
+            break
+        if game.end().ply() < 4:
+            continue
+        games.append(game)
+
+    f = open("%s.clean.pgn" % (filename), "w")
+    for game in games:
+        print(game, file=f, end="\n\n")
+    f.flush()
+    f.close()
+
+    end = time.time()
+    print(f'Time elapsed: {end - start}')
+
 
 def store_short_features():
     # TODO(JC): use absolute paths.
@@ -150,6 +173,47 @@ def store_short_features():
 
     end = time.time()
     print(f'Time elapsed: {end - start}')
+
+
+def get_short_features(games, games_limit, moves_limit):
+    global GAMES_LIMIT
+    global MOVES_LIMIT
+    GAMES_LIMIT = games_limit
+    MOVES_LIMIT = moves_limit
+
+    GAMES_LIMIT = min(GAMES_LIMIT, len(games))
+    features_num = 28
+    x = np.zeros((GAMES_LIMIT, features_num), dtype=int)
+    for i in range(len(games)):
+        game = games[i]
+        board = game.board()
+        j = 0
+        turn = True  # white
+        # Get piece value for each move
+        scores = np.zeros(2*MOVES_LIMIT, dtype=float)
+        game = games[i]
+        for move in game.mainline_moves():
+            if(j >= 2*MOVES_LIMIT):
+                break
+            board.push(move)
+            move_val = 0
+            if turn:
+                move_val = chess_utils.get_board_position_value(board, chess.WHITE, 30)
+            else:
+                move_val = chess_utils.get_board_position_value(board, chess.BLACK, 30)
+            scores[j] = move_val
+            j += 1
+            turn = turn ^ True
+        (white_feat, black_feat, corr) = scores_to_features(scores[:game.end().ply()])
+        x[i,0:10] = white_feat
+        x[i,10:20] = black_feat
+        if(np.isnan(corr)):
+            corr = 3
+        x[i,20] = corr
+        x[i,21:28] = game_features(game)
+
+    return x
+
 
 
 def scores_to_features(scores):
@@ -349,7 +413,11 @@ def main():
     #store_game_vec_features()
     #store_text_features()
     #print(scores_to_features(np.array([1,2,3,4,5,5,6,7,1,2])))
-    store_short_features()
+    #store_short_features()
+
+    # clean the data by removing the small games
+    for filename in ['data/std_test_small', 'data/std_train_big']:
+        clean_data(filename)
 
 
 if __name__ == '__main__':
