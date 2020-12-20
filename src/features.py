@@ -17,6 +17,7 @@ outputs into y.csv.
 # Global variables
 GAMES_LIMIT = 30000
 MOVES_LIMIT = 50
+#INPUT_FILE = 'data/fics_202011_notime_50k.pgn'
 INPUT_FILE = 'data/fics_202011_notime_50k.pgn'
 
 def store_linear_regression_features():
@@ -115,12 +116,14 @@ def store_short_features():
 
     start = time.time()
     #pgn = open(f'{pathlib.Path().absolute()}/data/fics_202011_notime_50k.pgn')
-    pgn = open(f'../data/fics_202011_notime_50k.pgn')
+    pgn = open(INPUT_FILE)
     games = []
     i = 0
     global GAMES_LIMIT
     while i < GAMES_LIMIT:
         game = chess.pgn.read_game(pgn)
+        if game is None:
+            break
         if game.end().ply() < 4:
             continue
         games.append(game)
@@ -168,8 +171,8 @@ def store_short_features():
         x[i,20] = corr
         x[i,21:28] = game_features(game)
 
-    np.savetxt("x_%s_%d.csv" % (GAMES_LIMIT, MOVES_LIMIT), x, delimiter=",", fmt='%.4f')
-    np.savetxt("y_%s_%d.csv" % (GAMES_LIMIT, MOVES_LIMIT), y, delimiter=",", fmt='%d')
+    np.savetxt("data/x/short_features/std_x_%s_%d.csv" % (GAMES_LIMIT, MOVES_LIMIT), x, delimiter=",", fmt='%.4f')
+    np.savetxt("data/y/short_features/std_y_%s_%d.csv" % (GAMES_LIMIT, MOVES_LIMIT), y, delimiter=",", fmt='%d')
 
     end = time.time()
     print(f'Time elapsed: {end - start}')
@@ -413,11 +416,21 @@ def main():
     #store_game_vec_features()
     #store_text_features()
     #print(scores_to_features(np.array([1,2,3,4,5,5,6,7,1,2])))
-    #store_short_features()
+    global MOVES_LIMIT
+    global GAMES_LIMIT
+    global INPUT_FILE
+
+    INPUT_FILE = 'data/std_train_big.clean.pgn'
+    GAMES_LIMIT = 50000
+    # these are full moves. so *2 for ply moves.
+    # Very inefficient, we should really memoise the previous results.
+    for moves_limit in [10,20,30,50,100]: 
+        MOVES_LIMIT = moves_limit
+        store_short_features()
 
     # clean the data by removing the small games
-    for filename in ['data/std_test_small', 'data/std_train_big']:
-        clean_data(filename)
+    # for filename in ['data/std_test_small', 'data/std_train_big']:
+    #     clean_data(filename)
 
 
 if __name__ == '__main__':
