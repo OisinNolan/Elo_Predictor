@@ -7,9 +7,9 @@ import time
 import json
 
 #TRAIN_FILE = '../data/train_50k.pgn'
-TRAIN_FILE = '../data/std_train_big.clean.pgn'
+TRAIN_FILE = 'data/std_train_big.clean.pgn'
 #TEST_FILE = '../data/test_10k.pgn'
-TEST_FILE = '../data/std_test_small.clean.pgn'
+TEST_FILE = 'data/std_test_small.clean.pgn'
 
 def test(pipe, train_count, test_count, filename, description=None):
     '''
@@ -60,5 +60,5 @@ def test(pipe, train_count, test_count, filename, description=None):
         'MSE': MSE
     }
     print(results)
-    with open(f'../reports/{filename}.json', 'w') as file:
+    with open(f'reports/{filename}.json', 'w') as file:
         json.dump(results, file)
