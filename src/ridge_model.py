@@ -30,6 +30,26 @@ def test():
 def baseline():
   pass
 
+def feature_selection():
+  global GAMES_LIMIT, MOVES_LIMIT
+  GAMES_LIMIT = 50000
+  MOVES_LIMIT = 20
+  X = np.genfromtxt("data/x/short_features/std_x_%s_%d.csv" % (GAMES_LIMIT, MOVES_LIMIT),
+                        dtype=float, delimiter=',', names=None)
+
+  X_fil = filter_low_var(X)
+  print(X.shape)
+  print(X)
+  print(X_fil.shape)
+  print(X_fil)
+
+
+def filter_low_var(X):
+  from sklearn.feature_selection import VarianceThreshold
+  sel = VarianceThreshold(threshold=(.8 * (1 - .8)))
+  sel.fit_transform(X)
+  return X
+
 def cross_val():
   #C_range = [0.001,0.01,0.1,1,10,100,1000]
   C_range = [1,10,20,30,40]
@@ -85,11 +105,11 @@ def cross_val():
                         linewidth=0, antialiased=False)
 
   # plot the error bars.
-  for i in np.arange(0, len(moves_range)):
-    for j in np.arange(0, len(C_range)):
-      ax.plot([moves_range[i], moves_range[i]],
-       [C_range[j], C_range[j]], [scores[i,j]+errors[i,j], scores[i,j]-errors[i,j]],
-        marker="_", c='black',zorder=3)
+  # for i in np.arange(0, len(moves_range)):
+  #   for j in np.arange(0, len(C_range)):
+  #     ax.plot([moves_range[i], moves_range[i]],
+  #      [C_range[j], C_range[j]], [scores[i,j]+errors[i,j], scores[i,j]-errors[i,j]],
+  #       marker="_", c='black',zorder=3)
 
   # Customize the z axis.
   ax.set_zlim(0.13, 0.15)
@@ -104,6 +124,7 @@ def cross_val():
 
 def main():
   cross_val()
+  #feature_selection()
 
 if __name__ == "__main__":
     main()
