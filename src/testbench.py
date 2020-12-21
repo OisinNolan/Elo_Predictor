@@ -25,8 +25,9 @@ def test(pipe, train_count, test_count, filename, description=None):
     y_train = []
     for i in range(train_count):
         game = chess.pgn.read_game(train_pgn)
-        X_train.append(game)
-        y_train.append([int(game.headers['WhiteElo']),int(game.headers['BlackElo'])])
+        if game is not None:
+            X_train.append(game)
+            y_train.append([int(game.headers['WhiteElo']),int(game.headers['BlackElo'])])
 
     fit_start = time.time()
     pipe.fit(X_train, y_train)
@@ -42,10 +43,13 @@ def test(pipe, train_count, test_count, filename, description=None):
     X_test = []
     y_test = []
     for i in range(test_count):
-        game = chess.pgn.read_game(train_pgn)
-        X_test.append(game)
-        y_test.append([int(game.headers['WhiteElo']),int(game.headers['BlackElo'])])
+        game = chess.pgn.read_game(test_pgn)
+        if game is not None:
+            X_test.append(game)
+            y_test.append([int(game.headers['WhiteElo']),int(game.headers['BlackElo'])])
     
+    print("Train actual size = %d, Test actual size = %d" % (len(X_train), len(X_test)))
+
     pred_start = time.time()
     y_pred = pipe.predict(X_test)
     pred_end = time.time()
