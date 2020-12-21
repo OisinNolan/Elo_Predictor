@@ -20,4 +20,4 @@ knn_pipe = Pipeline([
 
 # 2 hyperparams to tune: # moves considered in game2vec; # neighbours considered
 
-testbench.test(knn_pipe, 100, 10, 'test_knn_report', 'kNN test')
+testbench.test(knn_pipe, 50000, 10000, 'big_knn_report', 'kNN final performance test.')
