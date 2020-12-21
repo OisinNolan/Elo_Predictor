@@ -14,8 +14,8 @@ TEST_FILE = 'data/std_test_small.clean.pgn'
 def test(pipe, train_count, test_count, filename, description=None):
     '''
     Trains a given pipeline 'pipe' on 'train_count'
-    games of chess from data/train_50k and then evaluates it
-    on 'test_count' unseen games of chess from data/test_10k.
+    games of chess from TRAIN_FILE and then evaluates it
+    on 'test_count' unseen games of chess from TEST_FILE.
 
     The pipeline is then evaluated and a json report saved in 
     reports/<filename>.json
@@ -32,6 +32,11 @@ def test(pipe, train_count, test_count, filename, description=None):
     pipe.fit(X_train, y_train)
     fit_end = time.time()
     fit_time = (fit_end - fit_start)
+
+    y_pred = pipe.predict(X_train)
+
+    train_R2 = r2_score(y_train, y_pred)
+    train_MSE = mean_squared_error(y_train, y_pred)
     
     test_pgn = open(TEST_FILE)
     X_test = []
@@ -46,18 +51,20 @@ def test(pipe, train_count, test_count, filename, description=None):
     pred_end = time.time()
     pred_time = (pred_end - pred_start)
 
-    R2 = r2_score(y_test, y_pred)
-    MSE = mean_squared_error(y_test, y_pred)
+    test_R2 = r2_score(y_test, y_pred)
+    test_MSE = mean_squared_error(y_test, y_pred)
     
     results = {
         'Description': description,
         'Pipeline': str(pipe.named_steps),
         '# Games for training': train_count,
         '# Games for testing': test_count,
-        'Fit time': fit_time,
-        'Predict time': pred_time,
-        'R2 score': R2,
-        'MSE': MSE
+        'Train Fit time': fit_time,
+        'Train R2 score': train_R2,
+        'Train MSE': train_MSE,   
+        'Test Predict time': pred_time,
+        'Test R2 score': test_R2,
+        'Test MSE': test_MSE
     }
     print(results)
     with open(f'reports/{filename}.json', 'w') as file:

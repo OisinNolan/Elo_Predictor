@@ -20,4 +20,4 @@ knn_pipe = Pipeline([
 
 # 2 hyperparams to tune: # moves considered in game2vec; # neighbours considered
 
-testbench.test(knn_pipe, 10000, 1000, 'game2vec_gaussian_knn_report', 'Added gaussian weigting to knn after seeing promising results from cross-validation')
+testbench.test(knn_pipe, 100, 10, 'test_knn_report', 'kNN test')
