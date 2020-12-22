@@ -10,14 +10,14 @@ plt.style.use('seaborn-deep')
 
 import json
 
-#TRAIN_FILE = '../data/train_50k.pgn'
 TRAIN_FILE = 'data/std_train_big.clean.pgn'
-#TEST_FILE = '../data/test_10k.pgn'
 TEST_FILE = 'data/std_june.clean.pgn'
-#TEST_FILE = 'data/std_train_big.clean.pgn'
 
 def test_cached_features(pipe, train_count, test_count, filename, depth, description=None):
-
+    '''
+    Same as test(), but uses pre-processed features stored on disk. This allows for much
+    more faster testing.
+    '''
     X_train_o = np.genfromtxt("data/x/short_features/std_x_%s_%d.csv" % (50000, depth),
                       dtype=float, delimiter=',', names=None)
     y_train_o = np.genfromtxt("data/y/short_features/std_y_%s_%d.csv" % (50000, depth),
