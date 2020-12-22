@@ -13,6 +13,7 @@ import testbench
 from sklearn.dummy import DummyRegressor
 from sklearn.model_selection import cross_validate
 import time
+import math
 
 GAMES_LIMIT = 50000
 MOVES_LIMIT = 50
@@ -21,9 +22,16 @@ def games_to_short_features(games):
   return get_short_features(games, GAMES_LIMIT, MOVES_LIMIT)
 
 def test():
+<<<<<<< Updated upstream
   extractor = FunctionTransformer(games_to_short_features)
   ridge_model = Ridge(alpha=1/(0.001), max_iter=10000, solver='auto')
   poly_trans = preprocessing.PolynomialFeatures(degree=2, interaction_only=True)
+=======
+  #extractor = FunctionTransformer(games_to_short_features)
+  ridge_model = Ridge(alpha=1/(0.001), max_iter=10000, solver='auto')
+  #ridge_model = Lasso(alpha=1/(0.1), max_iter=1000)
+  poly_trans = preprocessing.PolynomialFeatures(degree=2, interaction_only=False)
+>>>>>>> Stashed changes
   ridge_pipe = Pipeline([
     #('Games to short features', extractor),
     ('scaler', StandardScaler()),
@@ -31,7 +39,7 @@ def test():
     ('Poly features', poly_trans),
     ('Ridge', ridge_model)
   ])
-  testbench.test_cached_features(ridge_pipe, 50000, 10000, 'ridge_test_report', depth=MOVES_LIMIT)
+  testbench.test_cached_features(ridge_pipe, 50000, 10000, 'ridge_june_poly_report', depth=MOVES_LIMIT)
 
 def baseline():
   model = DummyRegressor(strategy='mean')
@@ -159,12 +167,56 @@ def final_cross_val():
 
   plt.show()
 
+def moves_cv():
+  moves_range = [10,20,30,50,100] #[10,20,30,50,100]
+  CV = 10 # 10-fold cross-validation
+  global GAMES_LIMIT
+  GAMES_LIMIT = 50000
+  global MOVES_LIMIT
+
+  Ci = 0.001
+  q = 2
+
+  scores = np.zeros((len(moves_range), 1))
+  errors = np.zeros((len(moves_range), 1))
+  i = 0; j = 0;
+  for moves_limit in moves_range:
+    print("i=%d" % (i))
+    MOVES_LIMIT = moves_limit
+    X = np.genfromtxt("data/x/short_features/std_x_%s_%d.csv" % (GAMES_LIMIT, MOVES_LIMIT),
+                        dtype=float, delimiter=',', names=None)
+    y = np.genfromtxt("data/y/short_features/std_y_%s_%d.csv" % (GAMES_LIMIT, MOVES_LIMIT),
+                        dtype=int, delimiter=',', names=None)
+    model = Ridge(alpha=1/(Ci), max_iter=10000, normalize=False)
+    pipe = Pipeline([
+      ('scaler', StandardScaler()),
+      ('Poly features', preprocessing.PolynomialFeatures(q)),
+      ('Ridge', model)
+    ])
+    cv_results = cross_validate(pipe, X, y, cv=CV, scoring='r2')
+    scores[i] = np.mean(cv_results['test_score'])
+    errors[i] = np.std(cv_results['test_score'])
+    i+=1
+
+  print(scores)
+  print(errors)
+
+  # plot 2d plots
+  # For Q=1, the best is moves=30
+  plt.figure()
+  plt.errorbar(np.array(moves_range), np.array(scores[:,0]), np.array(errors[:,0]),
+  linestyle=None, marker='x', capsize=0)
+  plt.xlabel("Ci")
+  plt.ylabel("r2")
+
+  plt.show()
+
 
 def cross_val():
-  #C_range = [0.001,0.01,0.1,1,10,100,1000]
-  C_range = [1,10,20,30,40]
+  C_range = [0.001,0.01,0.1,1,10,100,1000]
+  #C_range = [1,10,20,30,40]
   q_range = [1]
-  moves_range = [50,100] #[10,20,30,50,100]
+  moves_range = [10,20,30,50,100] #[10,20,30,50,100]
   CV = 10 # 10-fold cross-validation
   global GAMES_LIMIT
   GAMES_LIMIT = 50000
@@ -190,7 +242,7 @@ def cross_val():
         ('Poly features', preprocessing.PolynomialFeatures(1)),
         ('Ridge', model)
       ])
-      cv_results = cross_validate(pipe, X, y, cv=CV, scoring='neg_mean_squared_error')
+      cv_results = cross_validate(pipe, X, y, cv=CV, scoring='r2')
       scores[i,j] = np.mean(cv_results['test_score'])
       errors[i,j] = np.std(cv_results['test_score'])
       j+=1
@@ -200,10 +252,10 @@ def cross_val():
   fig = plt.figure()
   ax = fig.gca(projection='3d')
   ax.set_xlabel('moves_limit', fontsize='x-large', c='black', fontweight = 'demi')
-  ax.set_ylabel('C', fontsize='x-large', c='black', fontweight = 'demi')
-  ax.set_zlabel('-mse', fontsize='x-large', c='black', fontweight = 'demi')
+  ax.set_ylabel('log10(C)', fontsize='x-large', c='black', fontweight = 'demi')
+  ax.set_zlabel('r2', fontsize='x-large', c='black', fontweight = 'demi')
   # Make data.
-  xx, yy = np.meshgrid(moves_range, C_range)
+  xx, yy = np.meshgrid(moves_range, np.log10(C_range))
 
   print(xx.shape)
   print(yy.shape)
@@ -226,6 +278,8 @@ def cross_val():
   # Customize the z axis.
   #ax.set_zlim(0.13, 0.15)
   ax.zaxis.set_major_locator(LinearLocator(10))
+
+
   #ax.zaxis.set_major_formatter(FormatStrFormatter('%.03f'))
 
   # Add a color bar which maps values to colors.
@@ -253,7 +307,7 @@ def cross_val():
         ('Poly features', preprocessing.PolynomialFeatures(2)),
         ('Ridge', model)
       ])
-      cv_results = cross_validate(pipe, X, y, cv=CV, scoring='neg_mean_squared_error')
+      cv_results = cross_validate(pipe, X, y, cv=CV, scoring='r2')
       scores[i,j] = np.mean(cv_results['test_score'])
       errors[i,j] = np.std(cv_results['test_score'])
       j+=1
@@ -263,10 +317,61 @@ def cross_val():
   fig = plt.figure()
   ax = fig.gca(projection='3d')
   ax.set_xlabel('moves_limit', fontsize='x-large', c='black', fontweight = 'demi')
-  ax.set_ylabel('C', fontsize='x-large', c='black', fontweight = 'demi')
-  ax.set_zlabel('-mse', fontsize='x-large', c='black', fontweight = 'demi')
+  ax.set_ylabel('log10(C)', fontsize='x-large', c='black', fontweight = 'demi')
+  ax.set_zlabel('r2', fontsize='x-large', c='black', fontweight = 'demi')
   # Make data.
-  xx, yy = np.meshgrid(moves_range, C_range)
+  xx, yy = np.meshgrid(moves_range, np.log10(C_range))
+
+  print(xx.shape)
+  print(yy.shape)
+  print(scores.shape)
+
+  print(scores)
+  print(errors)
+
+  # Plot the surface.
+  surf = ax.plot_surface(xx, yy, np.transpose(scores), cmap=cm.coolwarm,
+                        linewidth=0, antialiased=False)
+
+  ax.zaxis.set_major_locator(LinearLocator(10))
+
+
+
+  scores = np.zeros((len(moves_range), len(C_range)))
+  errors = np.zeros((len(moves_range), len(C_range)))
+  i = 0; j = 0;
+  for moves_limit in moves_range:
+    print("i=%d" % (i))
+    MOVES_LIMIT = moves_limit
+    X = np.genfromtxt("data/x/short_features/std_x_%s_%d.csv" % (GAMES_LIMIT, MOVES_LIMIT),
+                        dtype=float, delimiter=',', names=None)
+    y = np.genfromtxt("data/y/short_features/std_y_%s_%d.csv" % (GAMES_LIMIT, MOVES_LIMIT),
+                        dtype=int, delimiter=',', names=None)
+
+    #X = preprocessing.PolynomialFeatures(2).fit_transform(X)
+    j = 0
+    for Ci in C_range:
+      print("j=%d" % (j))
+      model = Ridge(alpha=1/(Ci), max_iter=10000, normalize=False)
+      pipe = Pipeline([
+        ('scaler', StandardScaler()),
+        ('Poly features', preprocessing.PolynomialFeatures(2, interaction_only=True)),
+        ('Ridge', model)
+      ])
+      cv_results = cross_validate(pipe, X, y, cv=CV, scoring='r2')
+      scores[i,j] = np.mean(cv_results['test_score'])
+      errors[i,j] = np.std(cv_results['test_score'])
+      j+=1
+    i+=1
+
+  # plot the results
+  fig = plt.figure()
+  ax = fig.gca(projection='3d')
+  ax.set_xlabel('moves_limit', fontsize='x-large', c='black', fontweight = 'demi')
+  ax.set_ylabel('log10(C)', fontsize='x-large', c='black', fontweight = 'demi')
+  ax.set_zlabel('r2', fontsize='x-large', c='black', fontweight = 'demi')
+  # Make data.
+  xx, yy = np.meshgrid(moves_range, np.log10(C_range))
 
   print(xx.shape)
   print(yy.shape)
@@ -349,11 +454,19 @@ def main():
 
   #final_cross_val()
 
+  #moves_cv()
+
   start = time.time()
   print(start)
+<<<<<<< Updated upstream
 
   test()
   baseline()
+=======
+  
+  test()
+  #baseline()
+>>>>>>> Stashed changes
   end = time.time()
   print(f'Time elapsed: {end - start}')
 
