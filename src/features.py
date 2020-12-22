@@ -120,6 +120,11 @@ def store_short_features():
     games = []
     i = 0
     global GAMES_LIMIT
+    # GAMES_LIMIT = 10000
+
+    global MOVES_LIMIT
+    MOVES_LIMIT = 100
+
     while i < GAMES_LIMIT:
         game = chess.pgn.read_game(pgn)
         if game is None:
@@ -131,7 +136,8 @@ def store_short_features():
 
     GAMES_LIMIT = min(GAMES_LIMIT, len(games))
     features_num = 28
-    x = np.zeros((GAMES_LIMIT, features_num), dtype=int)
+    moves_range = [10,20,30,40,50,100]
+    x = [np.zeros((GAMES_LIMIT, features_num), dtype=int) for i in moves_range]
     y = np.zeros((GAMES_LIMIT, 2), dtype=int)
     for i in range(len(games)):
         #print(game)
@@ -157,22 +163,30 @@ def store_short_features():
             if turn:
                 move_val = chess_utils.get_board_position_value(board, chess.WHITE, 30)
             else:
+                # !!!! NOTE MINUS SIGN HERE
                 move_val = -1*chess_utils.get_board_position_value(board, chess.BLACK, 30)
             scores[j] = move_val
             j += 1
             turn = turn ^ True
-        #print(scores)
-        (white_feat, black_feat, corr) = scores_to_features(scores[:game.end().ply()])
-        x[i,0:10] = white_feat
-        x[i,10:20] = black_feat
-        if(np.isnan(corr)):
-            # set an arbitrary value
-            corr = 3
-        x[i,20] = corr
-        x[i,21:28] = game_features(game)
 
-    np.savetxt("data/x/short_features/std_x_%s_%d.csv" % (GAMES_LIMIT, MOVES_LIMIT), x, delimiter=",", fmt='%.4f')
-    np.savetxt("data/y/short_features/std_y_%s_%d.csv" % (GAMES_LIMIT, MOVES_LIMIT), y, delimiter=",", fmt='%d')
+        k = 0;
+        for moves_limit in moves_range: 
+            MOVES_LIMIT = moves_limit
+            #print(scores)
+            (white_feat, black_feat, corr) = scores_to_features(scores[:min(game.end().ply(), 2*moves_limit)])
+            x[k][i,0:10] = white_feat
+            x[k][i,10:20] = black_feat
+            if(np.isnan(corr)):
+                # set an arbitrary value
+                corr = 3
+            x[k][i,20] = corr
+            x[k][i,21:28] = game_features(game)
+            k += 1
+    k = 0;
+    for moves_limit in moves_range:
+        np.savetxt("data/x/short_features/new_test_std_x_%s_%d.csv" % (GAMES_LIMIT, moves_limit), x[k], delimiter=",", fmt='%.4f')
+        np.savetxt("data/y/short_features/new_test_std_y_%s_%d.csv" % (GAMES_LIMIT, moves_limit), y, delimiter=",", fmt='%d')
+        k+=1
 
     end = time.time()
     print(f'Time elapsed: {end - start}')
@@ -203,7 +217,8 @@ def get_short_features(games, games_limit, moves_limit):
             if turn:
                 move_val = chess_utils.get_board_position_value(board, chess.WHITE, 30)
             else:
-                move_val = chess_utils.get_board_position_value(board, chess.BLACK, 30)
+                # !!! NOTE MINUS SIGN HERE
+                move_val = -1*chess_utils.get_board_position_value(board, chess.BLACK, 30)
             scores[j] = move_val
             j += 1
             turn = turn ^ True
@@ -420,13 +435,15 @@ def main():
     global GAMES_LIMIT
     global INPUT_FILE
 
-    INPUT_FILE = 'data/std_train_big.clean.pgn'
-    GAMES_LIMIT = 50000
+    clean_data('data/std_june')
+
+    INPUT_FILE = 'data/std_june.clean.pgn'
+    GAMES_LIMIT = 12000
     # these are full moves. so *2 for ply moves.
     # Very inefficient, we should really memoise the previous results.
-    for moves_limit in [10,20,30,50,100]: 
-        MOVES_LIMIT = moves_limit
-        store_short_features()
+    # for moves_limit in [10,20,30,50,100]: 
+    #     MOVES_LIMIT = moves_limit
+    store_short_features()
 
     # clean the data by removing the small games
     # for filename in ['data/std_test_small', 'data/std_train_big']:
