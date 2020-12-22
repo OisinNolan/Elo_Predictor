@@ -23,14 +23,14 @@ def test():
   global MOVES_LIMIT
   MOVES_LIMIT = 30
   #testbench(knn_pipe, 10000, 1000, 'game2vec_knn_report')
-  linear_model = LinearRegression()
+  linear_model = LinearRegression(n_jobs=2)
   scaler = StandardScaler()
   linear_pipe = Pipeline([
-    ('Games to short features', FunctionTransformer(games_to_short_features)),
+    #('Games to short features', FunctionTransformer(games_to_short_features)),
     ('Scaler', scaler),
     ('LinearREgression', linear_model)
   ])
-  testbench.test(linear_pipe, 50000, 10000, 'lin_reg_30_moves_report')
+  testbench.test_cached_features(linear_pipe, 40000, 10000, 'lin_reg_test_report', depth=MOVES_LIMIT)
 
 def cross_val():
   q_range = [1,2]
@@ -55,7 +55,7 @@ def cross_val():
     j = 0
     for q in q_range:
       print("j=%d" % (j))
-      X = preprocessing.PolynomialFeatures(q).fit_transform(X)
+      X = preprocessing.PolynomialFeatures(q, interaction_only=True).fit_transform(X)
       model = LinearRegression()
       pipe = Pipeline([
         ('scaler', StandardScaler()),
