@@ -15,18 +15,14 @@ from sklearn.model_selection import cross_validate
 import time
 
 GAMES_LIMIT = 50000
-MOVES_LIMIT = 30
+MOVES_LIMIT = 50
 
 def games_to_short_features(games):
   return get_short_features(games, GAMES_LIMIT, MOVES_LIMIT)
 
 def test():
-  #testbench(knn_pipe, 10000, 1000, 'game2vec_knn_report')
   extractor = FunctionTransformer(games_to_short_features)
-  ridge_model = Ridge(alpha=1/(0.1), max_iter=10000, solver='auto')
-  #ridge_model = Lasso(alpha=1/(1), max_iter=1000)
-  #ridge_model = DummyRegressor(strategy='median')
-  #ridge_model = svm.SVR()
+  ridge_model = Ridge(alpha=1/(0.001), max_iter=10000, solver='auto')
   poly_trans = preprocessing.PolynomialFeatures(degree=2, interaction_only=True)
   ridge_pipe = Pipeline([
     #('Games to short features', extractor),
@@ -84,7 +80,7 @@ def cross_val_pol(q):
 
     X = X[:GAMES_LIMIT, :]
     y = y[:GAMES_LIMIT, :]
-    
+
     X = preprocessing.PolynomialFeatures(q).fit_transform(X)
     j = 0
     for Ci in C_range:
@@ -293,7 +289,7 @@ def cross_val():
   # X = np.genfromtxt("data/x/short_features/std_x_%s_%d.csv" % (GAMES_LIMIT, MOVES_LIMIT),
   #                       dtype=float, delimiter=',', names=None)
   # y = np.genfromtxt("data/y/short_features/std_y_%s_%d.csv" % (GAMES_LIMIT, MOVES_LIMIT),
-  #                       dtype=int, delimiter=',', names=None)                      
+  #                       dtype=int, delimiter=',', names=None)
   # i = 0; j = 0;
   # for Ci in C_range:
   #   print("i=%d" % (i))
@@ -348,15 +344,15 @@ def main():
   # global GAMES_LIMIT
   #GAMES_LIMIT = 10000
   # cross_val_pol(3)
-  
+
   #feature_selection()
 
   #final_cross_val()
 
   start = time.time()
   print(start)
-  
-  #test()
+
+  test()
   baseline()
   end = time.time()
   print(f'Time elapsed: {end - start}')

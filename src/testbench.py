@@ -4,6 +4,10 @@ from sklearn.metrics import r2_score
 from sklearn.metrics import mean_squared_error
 import numpy as np
 import time
+import numpy as np
+import matplotlib.pyplot as plt
+plt.style.use('seaborn-deep')
+
 import json
 
 #TRAIN_FILE = '../data/train_50k.pgn'
@@ -48,7 +52,17 @@ def test_cached_features(pipe, train_count, test_count, filename, depth, descrip
 
     test_R2 = r2_score(y_test, y_pred)
     test_MSE = mean_squared_error(y_test, y_pred)
-    
+
+
+    print("ypred: ",y_pred[0], y_pred[1])
+    bins = np.linspace(500, 3000, 30)
+    plt.hist([y_pred[:,0], y_pred[:,1]], bins, label=['white elo', 'black elo'])
+    plt.title("Resulting ELO Predictions")
+    plt.xlabel("Predicted ELO rating")
+    plt.ylabel("Frequency")
+    plt.legend(loc='upper right')
+    plt.show()
+
     results = {
         'Description': description,
         'Pipeline': str(pipe.named_steps),
@@ -56,7 +70,7 @@ def test_cached_features(pipe, train_count, test_count, filename, depth, descrip
         '# Games for testing': test_count,
         'Train Fit time': fit_time,
         'Train R2 score': train_R2,
-        'Train MSE': train_MSE,   
+        'Train MSE': train_MSE,
         'Test Predict time': pred_time,
         'Test R2 score': test_R2,
         'Test MSE': test_MSE
@@ -70,7 +84,7 @@ def test(pipe, train_count, test_count, filename, description=None):
     Trains a given pipeline 'pipe' on 'train_count'
     games of chess from TRAIN_FILE and then evaluates it
     on 'test_count' unseen games of chess from TEST_FILE.
-    The pipeline is then evaluated and a json report saved in 
+    The pipeline is then evaluated and a json report saved in
     reports/<filename>.json
     '''
     train_pgn = open(TRAIN_FILE)
@@ -91,7 +105,7 @@ def test(pipe, train_count, test_count, filename, description=None):
 
     train_R2 = r2_score(y_train, y_pred)
     train_MSE = mean_squared_error(y_train, y_pred)
-    
+
     test_pgn = open(TEST_FILE)
     X_test = []
     y_test = []
@@ -100,7 +114,7 @@ def test(pipe, train_count, test_count, filename, description=None):
         if game is not None:
             X_test.append(game)
             y_test.append([int(game.headers['WhiteElo']),int(game.headers['BlackElo'])])
-    
+
     pred_start = time.time()
     y_pred = pipe.predict(X_test)
     pred_end = time.time()
@@ -108,7 +122,7 @@ def test(pipe, train_count, test_count, filename, description=None):
 
     test_R2 = r2_score(y_test, y_pred)
     test_MSE = mean_squared_error(y_test, y_pred)
-    
+
     results = {
         'Description': description,
         'Pipeline': str(pipe.named_steps),
@@ -116,7 +130,7 @@ def test(pipe, train_count, test_count, filename, description=None):
         '# Games for testing': test_count,
         'Train Fit time': fit_time,
         'Train R2 score': train_R2,
-        'Train MSE': train_MSE,   
+        'Train MSE': train_MSE,
         'Test Predict time': pred_time,
         'Test R2 score': test_R2,
         'Test MSE': test_MSE
