@@ -136,5 +136,5 @@ def test(pipe, train_count, test_count, filename, description=None):
         'Test MSE': test_MSE
     }
     print(results)
-    with open(f'reports/{filename}.json', 'w') as file:
+    with open(f'test_reports/{filename}.json', 'w') as file:
         json.dump(results, file)
